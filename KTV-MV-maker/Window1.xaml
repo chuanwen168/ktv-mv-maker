@@ -1,0 +1,220 @@
+﻿<Window x:Class="KTV_MV_maker.Window1"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:KTV_MV_maker"
+    Title="KTV 字幕 MV 制作工具（双排歌词）" Height="820" Width="1320"
+    WindowStartupLocation="CenterScreen" Closing="Window_Closing">
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 第0行：视频文件 -->
+        <DockPanel Grid.Row="0" Margin="0,0,0,4">
+            <Button DockPanel.Dock="Right" Width="72" Content="浏览..." Click="BtnBrowseVideo_Click" Margin="4,0,0,0"/>
+            <TextBlock DockPanel.Dock="Left" Text="视频文件:" VerticalAlignment="Center" Margin="0,0,6,0"/>
+            <TextBox x:Name="txtVideo" VerticalContentAlignment="Center"/>
+        </DockPanel>
+
+        <!-- 第1行：KRC歌词文件 -->
+        <DockPanel Grid.Row="1" Margin="0,0,0,6">
+            <Button DockPanel.Dock="Right" Width="72" Content="浏览..." Click="BtnBrowseKrc_Click" Margin="4,0,0,0"/>
+            <Button DockPanel.Dock="Right" Width="88" Content="编辑歌词" Click="BtnEditLyrics_Click" Margin="0,0,6,0"
+                    ToolTip="逐行查看歌词：勾选「标题」标为信息行，或删除行手动剔除"/>
+            <Button DockPanel.Dock="Right" Width="88" Content="查看明文" Click="BtnViewPlain_Click" Margin="0,0,6,0"
+                    ToolTip="查看 KRC 解密后的原始明文（排查歌词顺序 / 核对标记）"/>
+            <Button DockPanel.Dock="Right" Width="88" Content="加载歌词" Click="BtnLoadLyrics_Click" Margin="0,0,6,0"/>
+            <TextBlock DockPanel.Dock="Left" Text="KRC歌词:" VerticalAlignment="Center" Margin="0,0,6,0"/>
+            <TextBox x:Name="txtKrc" VerticalContentAlignment="Center"/>
+        </DockPanel>
+
+        <!-- 第2行：视频预览（LibVLC 内嵌） + 右侧歌词列表（点击跳转，焦点随视频） -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="300" MinWidth="160"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" BorderBrush="#888" BorderThickness="1" Background="Black">
+                <Grid x:Name="gridPreview">
+                    <local:VlcHost x:Name="vlcHost"/>
+                    <TextBlock x:Name="txtHint" Text="选择视频与 KRC 歌词 → 点击「加载歌词」→ 播放预览（LibVLC 全格式内嵌）"
+                               Foreground="#CCC" FontSize="14" HorizontalAlignment="Center"
+                               VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
+
+            <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                          Background="#DDD" ResizeBehavior="PreviousAndNext" ResizeDirection="Columns"/>
+
+            <Border Grid.Column="2" BorderBrush="#BBB" BorderThickness="1" Background="#F7F7F9">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="歌词列表（点击跳转）" Foreground="#555" Margin="8,6,8,4"/>
+                    <ListBox x:Name="lstLyrics" Background="#F7F7F9" Foreground="#222" BorderThickness="0"
+                             HorizontalContentAlignment="Stretch"
+                             SelectionChanged="LstLyrics_SelectionChanged">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Text}" TextWrapping="Wrap" Margin="2,3" FontSize="13"/>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </Border>
+        </Grid>
+
+        <!-- 第3行：播放控制 -->
+        <DockPanel Grid.Row="3" Margin="0,6,0,4">
+            <Button x:Name="btnPlay" DockPanel.Dock="Left" Width="76" Content="加载视频" Click="BtnPlay_Click"
+                    ToolTip="加载所选视频并从头播放；已加载歌词时会同步生成/刷新卡拉OK字幕"/>
+            <Button x:Name="btnPause" DockPanel.Dock="Left" Width="76" Content="暂停/继续" Margin="6,0,0,0" Click="BtnPause_Click"
+                    ToolTip="暂停；再点一次继续播放"/>
+            <Button x:Name="btnStop" DockPanel.Dock="Left" Width="58" Content="停止" Margin="6,0,0,0" Click="BtnStop_Click"/>
+            <Button x:Name="btnExternal" DockPanel.Dock="Left" Width="74" Content="外部预览" Margin="6,0,0,0" Click="BtnExternal_Click" ToolTip="用 ffplay 独立窗口预览（可播所有格式，进度在播放窗口内操作）"/>
+            <TextBlock x:Name="txtTime" DockPanel.Dock="Right" Text="00:00 / 00:00" Width="120"
+                       TextAlignment="Right" VerticalAlignment="Center" FontFamily="Consolas"/>
+            <Slider x:Name="slider" VerticalAlignment="Center" Margin="10,0,6,0"
+                    PreviewMouseLeftButtonDown="slider_PreviewMouseDown"
+                    PreviewMouseLeftButtonUp="slider_PreviewMouseUp"/>
+        </DockPanel>
+
+        <!-- 第4行：合成参数 -->
+        <Border Grid.Row="4" BorderBrush="#DDD" BorderThickness="1" Padding="8" Margin="0,4,0,6">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- 输出 -->
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="输出文件:" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                <TextBox Grid.Row="0" Grid.Column="1" x:Name="txtOut" VerticalContentAlignment="Center"/>
+                <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Margin="4,0,8,0">
+                    <Button Content="浏览..." Width="72" Click="BtnBrowseOut_Click"/>
+                </StackPanel>
+                <Button Grid.Row="0" Grid.Column="5" Content="打开文件夹" Width="96" Margin="6,0,0,0" Click="BtnOpenFolder_Click"
+                        ToolTip="在资源管理器里打开输出文件所在目录（没有输出路径时用视频所在目录）"/>
+                <TextBlock Grid.Row="0" Grid.Column="3" Text="输出格式:" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                <ComboBox Grid.Row="0" Grid.Column="4" x:Name="cmbFormat" Width="108" SelectedIndex="0">
+                    <ComboBoxItem Content="MP4 (H.264)"/>
+                    <ComboBoxItem Content="MKV (H.264)"/>
+                    <ComboBoxItem Content="MP4 (H.265)"/>
+                    <ComboBoxItem Content="MKV (H.265)"/>
+                </ComboBox>
+
+                <!-- 选项 -->
+                <CheckBox Grid.Row="1" Grid.Column="0" x:Name="chkDual" Content="双排歌词（显示下一句）" IsChecked="True" VerticalAlignment="Center" Margin="0,4,10,0"/>
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="画质:" VerticalAlignment="Center" Margin="0,4,4,0" HorizontalAlignment="Left"/>
+                <ComboBox Grid.Row="1" Grid.Column="1" x:Name="cmbQuality" Width="100" SelectedIndex="1" HorizontalAlignment="Left" Margin="40,4,0,0">
+                    <ComboBoxItem Content="高（CRF 18）"/>
+                    <ComboBoxItem Content="中（CRF 20）"/>
+                    <ComboBoxItem Content="普通（CRF 23）"/>
+                    <ComboBoxItem Content="低（CRF 26）"/>
+                </ComboBox>
+                <TextBlock Grid.Row="1" Grid.Column="2" Text="ffmpeg:" VerticalAlignment="Center" Margin="0,4,4,0"/>
+                <TextBox Grid.Row="1" Grid.Column="3" x:Name="txtFfmpeg" Text="" VerticalContentAlignment="Center" Margin="0,4,4,0" Width="280"/>
+                <Button Grid.Row="1" Grid.Column="4" x:Name="btnExport" Content="开始合成 MV" Width="100" Height="26" Margin="0,4,0,0" Click="BtnExport_Click"/>
+
+                <!-- 进度 -->
+                <ProgressBar Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="4" x:Name="progress" Height="16" Margin="0,6,8,0"/>
+                <TextBlock Grid.Row="2" Grid.Column="4" x:Name="txtLog" Text="就绪" VerticalAlignment="Center" Margin="0,6,0,0" TextTrimming="CharacterEllipsis"/>
+
+                <!-- 歌词样式：自定义字号 + 未唱/已唱颜色 -->
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="歌词样式:" VerticalAlignment="Center" Margin="0,4,6,0"/>
+                <Slider Grid.Row="3" Grid.Column="1" x:Name="sldFont" Minimum="24" Maximum="140" Value="72"
+                        Width="140" HorizontalAlignment="Left" Margin="0,4,4,0" VerticalAlignment="Center"
+                        ValueChanged="SldFont_ValueChanged" ToolTip="歌词字号（按 720p 基准，随视频分辨率等比缩放）"/>
+                <TextBlock Grid.Row="3" Grid.Column="1" x:Name="txtFontVal" Text="80px" VerticalAlignment="Center"
+                           HorizontalAlignment="Left" Margin="150,4,0,0" Width="48" FontFamily="Consolas"/>
+                <TextBlock Grid.Row="3" Grid.Column="2" Text="未唱:" VerticalAlignment="Center" Margin="0,4,4,0"/>
+                <Button Grid.Row="3" Grid.Column="2" x:Name="btnTextColor" Content="#FFFFFF" Width="76" Height="24"
+                        Margin="0,4,6,0" Click="BtnTextColor_Click" ToolTip="点击选择未唱部分歌词颜色（当前 #FFFFFF）"/>
+                <TextBlock Grid.Row="3" Grid.Column="3" Text="已唱:" VerticalAlignment="Center" Margin="0,4,4,0"/>
+                <Button Grid.Row="3" Grid.Column="3" x:Name="btnKaraokeColor" Content="#FFB800" Width="76" Height="24"
+                        Margin="0,4,4,0" Click="BtnKaraokeColor_Click" ToolTip="点击选择卡拉OK已唱部分颜色（当前 #FFB800）"/>
+                <TextBlock Grid.Row="3" Grid.Column="4" x:Name="txtStyleHint" Text="上下排同色：未唱部分与已唱（卡拉OK）部分可分别选色"
+                           VerticalAlignment="Center" Margin="0,4,0,0" Foreground="#888" FontSize="12" TextTrimming="CharacterEllipsis"/>
+
+                <!-- 歌词整体时间偏移（整首歌词提前/延后，标题与词曲信息行不参与） -->
+                <TextBlock Grid.Row="4" Grid.Column="0" Text="歌词偏移:" VerticalAlignment="Center" Margin="0,4,6,0"/>
+                <Slider Grid.Row="4" Grid.Column="1" x:Name="sldOffset" Minimum="-60000" Maximum="60000" Value="0"
+                        Width="140" HorizontalAlignment="Left" Margin="0,4,4,0" VerticalAlignment="Center"
+                        SmallChange="100" LargeChange="2000"
+                        ValueChanged="SldOffset_ValueChanged" ToolTip="拖动粗调：向左=歌词提前，向右=歌词延后；也可在右侧直接输入秒数"/>
+                <TextBox Grid.Row="4" Grid.Column="1" x:Name="txtOffsetSec" Text="0.0" Width="64"
+                         HorizontalAlignment="Left" Margin="150,4,4,0" VerticalContentAlignment="Center"
+                         LostFocus="TxtOffsetSec_LostFocus"
+                         ToolTip="秒，负=提前、正=延后；可输入大偏移（如 32.5，用于现场版片头很长的 MV）"/>
+                <TextBlock Grid.Row="4" Grid.Column="1" Text="秒" VerticalAlignment="Center"
+                           HorizontalAlignment="Left" Margin="218,4,0,0" Foreground="#666"/>
+                <TextBlock Grid.Row="4" Grid.Column="2" Text="← 提前" VerticalAlignment="Center" Margin="0,4,8,0"
+                           Foreground="#888" FontSize="12"/>
+                <TextBlock Grid.Row="4" Grid.Column="3" Text="延后 →" VerticalAlignment="Center" Margin="0,4,8,0"
+                           Foreground="#888" FontSize="12"/>
+                <TextBlock Grid.Row="4" Grid.Column="4" x:Name="txtOffsetHint" Text="整首歌词时间轴微调，可手输秒数（不含标题/词曲）"
+                           VerticalAlignment="Center" Margin="0,4,0,0" Foreground="#888" FontSize="12" TextTrimming="CharacterEllipsis"/>
+
+                <!-- 卡拉OK变色特效 -->
+                <TextBlock Grid.Row="5" Grid.Column="0" Text="K歌特效:" VerticalAlignment="Center" Margin="0,4,6,0"/>
+                <ComboBox Grid.Row="5" Grid.Column="1" x:Name="cmbEffect" Width="132" SelectedIndex="0"
+                          HorizontalAlignment="Left" Margin="0,4,4,0"
+                          SelectionChanged="CmbEffect_SelectionChanged"
+                          ToolTip="扫过=金色从左往右刷过；渐变=字内渐亮；跳过=整字瞬间变金">
+                    <ComboBoxItem Content="扫过（金色刷过）"/>
+                    <ComboBoxItem Content="渐变（字内渐亮）"/>
+                    <ComboBoxItem Content="跳过（整字跳变）"/>
+                </ComboBox>
+                <TextBlock Grid.Row="5" Grid.Column="2" Grid.ColumnSpan="3" x:Name="txtEffectHint"
+                           Text="扫过：金色从左往右刷过；预览可能不显示，以导出结果为准" VerticalAlignment="Center"
+                           Margin="0,4,0,0" Foreground="#888" FontSize="12" TextTrimming="CharacterEllipsis"/>
+
+                <!-- 开唱倒计时（仅正文第一句，开唱前 ≥3 秒才出现） -->
+                <TextBlock Grid.Row="6" Grid.Column="0" Text="开唱倒计时:" VerticalAlignment="Center" Margin="0,4,6,0"/>
+                <CheckBox Grid.Row="6" Grid.Column="1" x:Name="chkCountdown" Content="启用（仅第一句，≥3 秒才显示）"
+                          IsChecked="True" VerticalAlignment="Center" Margin="0,4,0,0"
+                          ToolTip="第一句开唱前每秒减一颗图案；直接开唱（不足 3 秒）的歌不显示"/>
+                <TextBlock Grid.Row="6" Grid.Column="2" Text="图案:" VerticalAlignment="Center" Margin="0,4,4,0"/>
+                <TextBox Grid.Row="6" Grid.Column="3" x:Name="txtCountdownChar" Text="★" Width="46"
+                         VerticalContentAlignment="Center" Margin="0,4,4,0" MaxLength="3"
+                         ToolTip="倒计时图案，建议单色符号（★ ● ♥ ♪），彩色 emoji 会显示异常"/>
+                <Button Grid.Row="6" Grid.Column="4" x:Name="btnCountdownColor" Content="#00A8FF" Width="76" Height="24"
+                        HorizontalAlignment="Left" Margin="0,4,0,0" Click="BtnCountdownColor_Click"
+                        ToolTip="点击选择倒计时图案颜色"/>
+
+                <!-- 标题颜色（仅开场标题与词曲信息行；正文歌词仍用未唱/已唱颜色） -->
+                <TextBlock Grid.Row="7" Grid.Column="0" Text="标题颜色:" VerticalAlignment="Center" Margin="0,4,6,0"/>
+                <Button Grid.Row="7" Grid.Column="1" x:Name="btnTitleColor" Content="#FFFFFF" Width="76" Height="24"
+                        HorizontalAlignment="Left" Margin="0,4,0,0" Click="BtnTitleColor_Click"
+                        ToolTip="点击选择开场标题/词曲信息行颜色（正文歌词不受影响）"/>
+                <TextBlock Grid.Row="7" Grid.Column="2" Grid.ColumnSpan="4"
+                           Text="只作用于开场标题、作词/作曲等信息行；正文歌词仍用「未唱/已唱」两种颜色"
+                           VerticalAlignment="Center" Margin="0,4,0,0" Foreground="#888" FontSize="12" TextTrimming="CharacterEllipsis"/>
+            </Grid>
+        </Border>
+
+        <!-- 第5行：状态栏 -->
+        <StatusBar Grid.Row="5">
+            <TextBlock x:Name="txtStatus" Text="未加载歌词"/>
+        </StatusBar>
+    </Grid>
+</Window>

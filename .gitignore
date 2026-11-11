@@ -1,0 +1,16 @@
+# ---- Build results ----
+[Bb]in/
+[Oo]bj/
+
+# ---- Visual Studio ----
+.vs/
+*.suo
+*.user
+*.userprefs
+*.sln.docstates
+
+# ---- Excluded: third-party KRC decoder plugin source ----
+KugouDecoder/
+
+# ---- Runtime temp ----
+mv_tmp/

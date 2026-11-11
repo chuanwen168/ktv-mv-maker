@@ -1,0 +1,53 @@
+<Window x:Class="KTV_MV_maker.LyricEditorWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="歌词编辑 - 标记标题 / 手动剔除" Height="700" Width="780"
+    WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" TextWrapping="Wrap" Margin="0,0,0,8" Foreground="#555"
+                   Text="勾选「标题」= 该行作为歌曲信息行（开场居中显示，不参与双排卡拉OK）；取消勾选 = 恢复为正式歌词。选中一行或多行后点「删除选中」可彻底剔除（如广告词、重复信息行）。修改后点「确定」应用。"/>
+
+        <!-- 开场标题：直接对应 KRC 的 ti 标签，太长可一键只留歌名 -->
+        <DockPanel Grid.Row="1" Margin="0,0,0,8">
+            <TextBlock DockPanel.Dock="Left" Text="标题（ti）:" VerticalAlignment="Center" Margin="0,0,6,0"/>
+            <Button DockPanel.Dock="Right" Width="96" Content="仅取歌名" Click="BtnTrimTitle_Click" Margin="6,0,0,0"
+                    ToolTip="去掉括号里的副标题与「 - 歌手」，例如「我知道(电视剧…片尾曲 / LG冰淇淋代言曲) - 周杰伦」→「我知道」"/>
+            <TextBox x:Name="txtTitle" VerticalContentAlignment="Center"
+                     ToolTip="开场居中显示的歌名，改完点「确定」生效；留空则用「歌名 - 歌手」"/>
+        </DockPanel>
+
+        <DataGrid Grid.Row="2" x:Name="grid" AutoGenerateColumns="False" CanUserAddRows="False"
+                  CanUserDeleteRows="False" CanUserResizeRows="False" SelectionMode="Extended"
+                  HeadersVisibility="Column" GridLinesVisibility="Horizontal" RowHeaderWidth="0"
+                  AlternatingRowBackground="#F7F7F7">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="序号" Binding="{Binding Index}" Width="46" IsReadOnly="True"/>
+                <DataGridTextColumn Header="时间" Binding="{Binding TimeText}" Width="92" IsReadOnly="True"/>
+                <DataGridCheckBoxColumn Header="标题" Binding="{Binding IsMeta, UpdateSourceTrigger=PropertyChanged}" Width="56"/>
+                <DataGridTextColumn Header="歌词内容" Binding="{Binding Text}" Width="*" IsReadOnly="True"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <DockPanel Grid.Row="3" Margin="0,8,0,0">
+            <Button DockPanel.Dock="Left" Width="96" Content="全部标为标题" Click="BtnAllMeta_Click" Margin="0,0,6,0"
+                    ToolTip="把所有行都作为信息行（一般只在整首歌词都是信息行时使用）"/>
+            <Button DockPanel.Dock="Left" Width="96" Content="全部标为正文" Click="BtnAllReal_Click" Margin="0,0,6,0"
+                    ToolTip="取消所有行的标题标记，全部作为正式歌词"/>
+            <Button DockPanel.Dock="Left" Width="90" Content="删除选中" Click="BtnDelete_Click" Margin="0,0,6,0"/>
+            <Button DockPanel.Dock="Left" Width="96" Content="另起一行" Click="BtnSplit_Click" Margin="0,0,6,0"
+                    ToolTip="把选中的一句在光标处拆成两句（用于过长的歌词；字幕字号不会自动缩小，需手动拆行）"/>
+            <Button DockPanel.Dock="Left" Width="96" Content="简体→繁体" Click="BtnToTraditional_Click" Margin="0,0,6,0"
+                    ToolTip="把全部歌词转成繁体（按 OpenCC 词表转换，词级精确；时间轴与标题标记不变）"/>
+            <Button DockPanel.Dock="Right" Width="88" Content="取消" Click="BtnCancel_Click" Margin="6,0,0,0"/>
+            <Button DockPanel.Dock="Right" Width="88" Content="确定" Click="BtnOk_Click"/>
+            <TextBlock x:Name="txtCount" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="#666"/>
+        </DockPanel>
+    </Grid>
+</Window>

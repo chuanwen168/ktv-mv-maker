@@ -32,7 +32,7 @@
 D:\KTVmaker\                        ← 固定资源目录
 ├─ ffmpeg.exe / ffprobe.exe         ← 视频合成引擎（libass 烧录字幕）两个都需要，否则无法加载
 ├─ plugins\                         ← 插件目录
-│   ├─ KugouDecoder.dll             ← KRC 解密插件（编译后自动复制到此）
+│   ├─ KugouDecoder.dll             ← KRC 解密插件（下载后或者编译后手动复制到此）
 │   └─ ICSharpCode.SharpZipLib.dll  ← 插件依赖（zlib 解压）
 ├─ libvlc\                           ← LibVLC 3.0.24（内嵌预览播放引擎，x64）
 │   ├─ libvlc.dll / libvlccore.dll    ← 播放器核心（P/Invoke）
